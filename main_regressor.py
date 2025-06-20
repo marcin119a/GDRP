@@ -18,7 +18,7 @@ X_train, X_test, y_train, y_test, train_loader = load_data("data/filtered_merged
 input_dim = X_train.shape[1]
 num_classes = 24
 clf = MLPClassifier(input_dim, num_classes)
-clf.load_state_dict(torch.load("models/mlp_classifier_v_02.0.pt", map_location=torch.device('cpu')))
+clf.load_state_dict(torch.load("models/mlp_classifier_v_01.0.pt", map_location=torch.device('cpu')))
 
 epochs = 50
 learning_rate = 0.001
@@ -43,7 +43,7 @@ print(f"Mean Squared Error: {mse:.4f}")
 print(f"Root Mean Squared Error: {rmse:.4f}")
 print(f"Pearson Correlation: {pearson:.4f}")
 print(f"Spearman Correlation: {spearman_corr:.4f}")
-plot_residuals(y_pred, y_test)
+plot_residuals(y_pred, y_test, text="Residuals – Sorafenib response")
 
 from src.reset_and_retrain import reset_weights
 
@@ -69,4 +69,4 @@ print(f"Pearson Correlation: {pearson:.4f}")
 print(f"Spearman Correlation: {spearman_corr:.4f}")
 
 
-plot_residuals(y_pred_reset, y_test)
+plot_residuals(y_pred_reset, y_test, text="Residuals after model reset (Sorafenib)")

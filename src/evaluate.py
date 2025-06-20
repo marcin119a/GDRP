@@ -11,11 +11,11 @@ def evaluate(model, X_test, y_test):
         print(f"RMSE: {np.sqrt(mse):.4f}")
         return y_pred
 
-def plot_residuals(y_pred, y_test):
+def plot_residuals(y_pred, y_test, text="Residuals vs Prediction"):
     residuals = y_test.numpy().squeeze() - y_pred.numpy()
     plt.scatter(y_pred.numpy(), residuals, alpha=0.5)
     plt.axhline(0, color='red', linestyle='--')
     plt.xlabel("Predicted AUC")
     plt.ylabel("Residual")
-    plt.title("Residuals vs Prediction")
+    plt.title(text)
     plt.show()
