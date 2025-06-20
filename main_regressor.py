@@ -2,21 +2,12 @@ import torch
 from torch import optim
 from src.data_utils import load_data
 from src.models import MLPClassifier, MLPRegressor
-from src.train import train
+from src.train_regression import train
 from src.evaluate import evaluate, plot_residuals
 from src.metrics import pearson_corr
 from scipy.stats import spearmanr
 from sklearn.metrics import mean_squared_error
-import numpy as np
-import random
-
-def set_seed(seed=42):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+from src.utils import set_seed
 
 set_seed(42)
 
@@ -27,7 +18,7 @@ X_train, X_test, y_train, y_test, train_loader = load_data("data/filtered_merged
 input_dim = X_train.shape[1]
 num_classes = 24
 clf = MLPClassifier(input_dim, num_classes)
-clf.load_state_dict(torch.load("models/mlp_classifier_v_01.0.pt", map_location=torch.device('cpu')))
+clf.load_state_dict(torch.load("models/mlp_classifier_v_02.0.pt", map_location=torch.device('cpu')))
 
 epochs = 50
 learning_rate = 0.001

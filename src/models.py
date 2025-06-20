@@ -1,5 +1,6 @@
 import torch.nn as nn
 
+
 class MLPClassifier(nn.Module):
     def __init__(self, input_dim, num_classes):
         super().__init__()
@@ -8,9 +9,11 @@ class MLPClassifier(nn.Module):
             nn.Linear(64, 32), nn.ReLU(),
             nn.Linear(32, num_classes)
         )
+        self.loss_fn = nn.CrossEntropyLoss()
 
     def forward(self, x):
         return self.model(x)
+
 
 class MLPRegressor(nn.Module):
     def __init__(self, pretrained_model):

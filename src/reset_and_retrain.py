@@ -5,14 +5,16 @@ from scipy.stats import spearmanr
 from sklearn.metrics import mean_squared_error
 from src.models import MLPRegressor
 from src.metrics import pearson_corr
-from src.train import train
+from src.train_regression import train
 from src.data_utils import load_data
+
 
 def reset_weights(m):
     if isinstance(m, nn.Linear):
         init.kaiming_uniform_(m.weight, nonlinearity='relu')
         if m.bias is not None:
             init.zeros_(m.bias)
+
 
 def retrain_with_reset(clf, data_path="data/filtered_merged_df.parquet"):
     # Load data

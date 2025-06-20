@@ -1,6 +1,7 @@
 import numpy as np
 from src.metrics import pearson_corr
 
+
 def train(model, dataloader, optimizer, epochs=20):
     model.train()
     for epoch in range(epochs):
