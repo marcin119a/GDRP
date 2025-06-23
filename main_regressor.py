@@ -43,7 +43,6 @@ print(f"Mean Squared Error: {mse:.4f}")
 print(f"Root Mean Squared Error: {rmse:.4f}")
 print(f"Pearson Correlation: {pearson:.4f}")
 print(f"Spearman Correlation: {spearman_corr:.4f}")
-plot_residuals(y_pred, y_test, text="Residuals – Sorafenib response")
 
 from src.reset_and_retrain import reset_weights
 
@@ -52,6 +51,7 @@ reg_reset = MLPRegressor(clf)
 reg_reset.apply(reset_weights)
 optimizer_reset = optim.Adam(reg_reset.parameters(), lr=learning_rate)
 train(reg_reset, train_loader, optimizer_reset, epochs=epochs)
+
 
 # Evaluation
 reg_reset.eval()
@@ -68,5 +68,19 @@ print(f"Root Mean Squared Error: {rmse:.4f}")
 print(f"Pearson Correlation: {pearson:.4f}")
 print(f"Spearman Correlation: {spearman_corr:.4f}")
 
+residuals_1 = y_test.numpy().squeeze() - y_pred.numpy()
+residuals_2 = y_test.numpy().squeeze() - y_pred_reset.numpy()
 
-plot_residuals(y_pred_reset, y_test, text="Residuals after model reset (Sorafenib)")
+preds_1 = y_pred.numpy()
+preds_2 = y_pred_reset.numpy()
+
+min_resid = min(residuals_1.min(), residuals_2.min())
+max_resid = max(residuals_1.max(), residuals_2.max())
+y_lim = (min_resid, max_resid)
+
+min_pred = min(preds_1.min(), preds_2.min())
+max_pred = max(preds_1.max(), preds_2.max())
+x_lim = (min_pred, max_pred)
+
+plot_residuals(y_pred, y_test, text="GDRP Residuals – Sorafenib – Full Fine-Tuning", y_lim=y_lim, x_lim=x_lim)
+plot_residuals(y_pred_reset, y_test, text="GDRP Residuals – Sorafenib – Reset Weights", y_lim=y_lim, x_lim=x_lim)
