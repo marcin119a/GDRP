@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch
 
 
 class MLPClassifier(nn.Module):
@@ -27,3 +28,35 @@ class MLPRegressor(nn.Module):
     def forward(self, x):
         features = self.feature_extractor(x)
         return self.regression_head(features)
+
+
+class LinearRegression(nn.Module):
+    def __init__(self, input_dim):
+        super().__init__()
+        self.linear = nn.Linear(input_dim, 1)
+        self.loss_fn = nn.MSELoss()
+    
+    def forward(self, x):
+        return self.linear(x)
+
+
+class SimpleNN(nn.Module):
+    def __init__(self, input_dim):
+        super().__init__()
+        self.model = nn.Sequential(
+            nn.Linear(input_dim, 128),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.Linear(32, 1),
+            nn.Sigmoid()
+        )
+        self.loss_fn = nn.MSELoss()
+    
+    def forward(self, x):
+        return self.model(x)
+

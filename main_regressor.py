@@ -76,11 +76,11 @@ preds_2 = y_pred_reset.numpy()
 
 min_resid = min(residuals_1.min(), residuals_2.min())
 max_resid = max(residuals_1.max(), residuals_2.max())
-y_lim = (min_resid, max_resid)
+y_lim = (min_resid, 0.35)
 
 min_pred = min(preds_1.min(), preds_2.min())
 max_pred = max(preds_1.max(), preds_2.max())
-x_lim = (min_pred, max_pred)
+x_lim = (0.5, max_pred)
 
 plot_residuals(y_pred, y_test, text="GDRP Residuals – Sorafenib – Full Fine-Tuning", y_lim=y_lim, x_lim=x_lim)
 plot_residuals(y_pred_reset, y_test, text="GDRP Residuals – Sorafenib – Reset Weights", y_lim=y_lim, x_lim=x_lim)
