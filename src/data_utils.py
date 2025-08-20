@@ -16,4 +16,5 @@ def load_data(path: str):
     y_test = torch.tensor(y_test, dtype=torch.float32).view(-1, 1)
 
     train_loader = DataLoader(TensorDataset(X_train, y_train), batch_size=64, shuffle=True)
+
     return X_train, X_test, y_train, y_test, train_loader

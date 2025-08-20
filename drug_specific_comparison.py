@@ -27,8 +27,43 @@ def load_drug_data(drug_name, data_path="data/merged_df_all_drugs.parquet"):
     # Load the full dataset
     df = pd.read_parquet(data_path)
     
+    disease_list = [
+        "Liver",
+        "Soft tissue",
+        "Thyroid",
+        "Urinary tract",
+        "Bone",
+        "Stomach",
+        "Pleura",
+        "Ovary",
+        "Kidney",
+        "Large intestine",
+        "Autonomic ganglia",
+        "Breast",
+        "Pancreas",
+        "Upper aerodigestive tract",
+        "Esophagus",
+        "Central nervous system",
+        "Skin",
+        "Lung",
+        "Hematopoietic and lymphoid tissue"
+    ]
+    mapping = {
+        "Kidney Cancer": "Kidney",
+        "Bladder Cancer": "Urinary tract",
+        "Pancreatic Cancer": "Pancreas",
+        "Colon/Colorectal Cancer": "Large intestine",
+        "Breast Cancer": "Breast",
+        "Ovarian Cancer": "Ovary",
+        "Skin Cancer": "Skin",
+        "Brain Cancer": "Central nervous system",
+        "Lung Cancer": "Lung",
+    }
+
     # Filter data for the specific drug
     drug_df = df[df['DRUG_NAME'] == drug_name].copy()
+    drug_df['mapped_cancer'] = drug_df['primary_disease'].map(mapping)
+    drug_df = drug_df[drug_df['mapped_cancer'].isin(disease_list)].dropna()
     
     if len(drug_df) == 0:
         raise ValueError(f"No data found for drug: {drug_name}")
@@ -74,7 +109,7 @@ def get_available_drugs(data_path="data/merge_df_all_drugs.parquet"):
     return sorted(drugs)
 
 def run_model_comparison(drug_name, X_train, X_test, y_train, y_test, train_loader, 
-                        input_dim, epochs=30, learning_rate=0.001):
+                        input_dim, epochs=50, learning_rate=0.001):
     """
     Run model comparison for a specific drug.
     """
@@ -83,6 +118,15 @@ def run_model_comparison(drug_name, X_train, X_test, y_train, y_test, train_load
     print(f"{'='*60}")
     
     results = {}
+    # Create a new classifier for this drug's feature dimension
+    num_classes = 24
+    input_dim = X_train.shape[1]
+    clf = MLPClassifier(input_dim, num_classes)
+    clf.load_state_dict(torch.load("models/mlp_classifier_v_01.0.pt", map_location=torch.device('cpu')))
+
+    # Don't load pretrained weights since dimensions don't match
+    # Instead, train from scratch or skip this model
+    print(f"Creating new MLPClassifier for {input_dim} features (no pretrained weights)")
     
     # === 1. Linear Regression (Sklearn) ===
     print(f"\n=== 1. Linear Regression (Sklearn) ===")
@@ -166,16 +210,7 @@ def run_model_comparison(drug_name, X_train, X_test, y_train, y_test, train_load
     
     # === 4. MLP Regressor (Reset Weights) ===
     print(f"\n=== 4. MLP Regressor (Reset Weights) ===")
-    
-    # Create a new classifier for this drug's feature dimension
-    num_classes = 24
-    clf = MLPClassifier(input_dim, num_classes)
-    clf.load_state_dict(torch.load("models/mlp_classifier_v_01.0.pt", map_location=torch.device('cpu')))
 
-    # Don't load pretrained weights since dimensions don't match
-    # Instead, train from scratch or skip this model
-    print(f"Creating new MLPClassifier for {input_dim} features (no pretrained weights)")
-    
     reg_reset = MLPRegressor(clf)
     #reg_reset.apply(reset_weights)
     optimizer_reset = optim.Adam(reg_reset.parameters(), lr=learning_rate)
@@ -251,7 +286,7 @@ def plot_drug_results(drug_name, results, y_test, save_dir="plots"):
     
     for i, (model_name, metrics) in enumerate(results.items()):
         plt.scatter(y_true_np, metrics['y_pred'], 
-                   alpha=0.6, label=f"{model_name} (R²={metrics['r2']:.3f})", 
+                   alpha=0.6, label=f"{model_name} (Pearson={metrics['pearson']:.3f})", 
                    color=colors[i], marker=markers[i])
     
     # Perfect prediction line
@@ -335,39 +370,7 @@ def plot_drug_results(drug_name, results, y_test, save_dir="plots"):
         plt.tight_layout()
         plt.close()
 
-def check_drug_availability(drugs_to_test, data_path="data/merged_df_all_drugs.parquet"):
-    """
-    Check which drugs from the list are available in the dataset.
-    """
-    print("=== Checking Drug Availability ===")
-    
-    # Load the dataset
-    df = pd.read_parquet(data_path)
-    
-    available_drugs = []
-    unavailable_drugs = []
-    
-    for drug in drugs_to_test:
-        count = len(df[df['DRUG_NAME'] == drug])
-        if count > 0:
-            available_drugs.append((drug, count))
-        else:
-            unavailable_drugs.append(drug)
-    
-    print(f"\nAvailable drugs ({len(available_drugs)}):")
-    print(f"{'Drug Name':<25} {'Count':<10}")
-    print("-" * 35)
-    for drug, count in sorted(available_drugs, key=lambda x: x[1], reverse=True):
-        print(f"{drug:<25} {count:<10}")
-    
-    if unavailable_drugs:
-        print(f"\nUnavailable drugs ({len(unavailable_drugs)}):")
-        for drug in unavailable_drugs:
-            print(f"  - {drug}")
-    
-    print(f"\nTotal samples for available drugs: {sum(count for _, count in available_drugs)}")
-    
-    return [drug for drug, _ in available_drugs]
+from src.utils import check_drug_availability
 
 def main():
     """
@@ -436,6 +439,9 @@ def main():
             print(f"  Best Pearson: {best_pearson[0]} (Pearson={best_pearson[1]['pearson']:.4f})")
             print(f"  Best Spearman: {best_spearman[0]} (Spearman={best_spearman[1]['spearman']:.4f})")
             
+            # Highlight the best model based on Pearson correlation
+            print(f"\n🏆 BEST MODEL (by Pearson correlation): {best_pearson[0]} (Pearson={best_pearson[1]['pearson']:.4f})")
+            
             # Create plots
             plot_drug_results(drug_name, results, y_test)
             
@@ -452,13 +458,23 @@ def main():
         for drug_name in all_results.keys():
             print(f"  - {drug_name}")
         
-        # Calculate overall best models
-        print(f"\nOverall best models across all drugs:")
+        # Calculate overall best models based on Pearson correlation
+        print(f"\nOverall best models across all drugs (by Pearson correlation):")
         best_models = {}
         for drug_name, results in all_results.items():
-            best_r2 = max(results.items(), key=lambda x: x[1]['r2'])
-            best_models[drug_name] = best_r2[0]
-            print(f"  {drug_name}: {best_r2[0]} (R²={best_r2[1]['r2']:.4f})")
+            best_pearson = max(results.items(), key=lambda x: x[1]['pearson'])
+            best_models[drug_name] = best_pearson[0]
+            print(f"  {drug_name}: {best_pearson[0]} (Pearson={best_pearson[1]['pearson']:.4f})")
+        
+        # Count how many times each model is the best
+        model_counts = {}
+        for model_name in best_models.values():
+            model_counts[model_name] = model_counts.get(model_name, 0) + 1
+        
+        print(f"\nModel performance summary (by Pearson correlation):")
+        for model_name, count in sorted(model_counts.items(), key=lambda x: x[1], reverse=True):
+            percentage = (count / len(all_results)) * 100
+            print(f"  {model_name}: {count}/{len(all_results)} drugs ({percentage:.1f}%)")
     
     print("\nDrug-specific comparison completed!")
 
